@@ -1,0 +1,51 @@
+<html>
+    <head>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script>
+            const socket = new WebSocket('ws://localhost:5000');
+            socket.onopen = function() {
+                console.log('Connected');
+                socket.send(
+                    JSON.stringify({
+                        event: 'events',
+                        data: 'test',
+                    }),
+                );
+                socket.onmessage = function(message) {
+                    const {event, data} = JSON.parse(message.data);
+                    $('.chat').append('<li>'+data.nickname+' : '+data.message+'</li>');
+                };
+            };
+        </script>
+    </head>
+
+    <body>
+        <ul class="chat">
+        </ul>
+        <input type="text" class="text"/>
+        <button class="btn">hi</button>
+        <script>
+            $('.btn').on('click', function(){
+                socket.send(
+                    JSON.stringify({
+                        event: 'message',
+                        data: $('.text').val(),
+                    }),);
+                $('.text').val('');
+            })
+        </script>
+        <br/>
+        <input type="text" class="nickname"/>
+        <button class="setNickname">setNickname</button>
+        <script>
+            $('.setNickname').on('click', function(){
+                socket.send(
+                    JSON.stringify({
+                        event: 'nickname',
+                        data: $('.nickname').val(),
+                    }),);
+                $('.nickname').val('');
+            })
+        </script>
+    </body>
+</html>
