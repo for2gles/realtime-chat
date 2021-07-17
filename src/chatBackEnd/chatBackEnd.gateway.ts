@@ -19,9 +19,9 @@ import { Injectable } from '@nestjs/common';
 export class ChatBackEndGateway
     implements OnGatewayConnection, OnGatewayDisconnect
 {
-    client: Record<string, Socket>;
+    clientList: Record<string, Socket>;
     constructor() {
-        this.client = {};
+        this.clientList = {};
     }
     @WebSocketServer()
     server: Server;
@@ -29,19 +29,19 @@ export class ChatBackEndGateway
     //소켓 연결시 오브젝트에 저장
     public handleConnection(client: Socket): void {
         console.log('connected', client.id);
-        this.client[client.id] = client;
+        this.clientList[client.id] = client;
     }
 
     //소켓 연결 해제시 오브젝트에서 제거
     public handleDisconnect(client: Socket): void {
         console.log('disonnected', client.id);
-        delete this.client[client.id];
+        delete this.clientList[client.id];
     }
 
     //메시지가 전송되면 모든 유저에게 메시지 전송
     @SubscribeMessage('sendMessage')
     sendMessage(client: Socket, message: string): void {
-        for (const [id, thisClient] of Object.entries(this.client)) {
+        for (const [id, thisClient] of Object.entries(this.clientList)) {
             thisClient.emit('getMessage', {
                 id: client.id,
                 nickname: thisClient.data.nickname,
