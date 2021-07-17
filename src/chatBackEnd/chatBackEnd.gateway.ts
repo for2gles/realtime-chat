@@ -9,7 +9,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { ClientListService } from './clientList.service';
 import { ChatRoomService } from './chatRoom.service';
-import { setInitDTO } from './dto/chatBackEnd.dto';
+import { setInitDTO, chatRoomListDTO } from './dto/chatBackEnd.dto';
 
 @WebSocketGateway(5000, {
     cors: {
@@ -41,12 +41,11 @@ export class ChatBackEndGateway
     //메시지가 전송되면 모든 유저에게 메시지 전송
     @SubscribeMessage('sendMessage')
     sendMessage(client: Socket, message: string): void {
-        for (const [id, thisClient] of Object.entries(
-            this.ClientListService.getClient(),
-        )) {
-            thisClient.emit('getMessage', {
+        const chatRoom = this.ChatRoomService.getChatRoom(client.data.room_id);
+        for (const thisClientId of chatRoom.in_room) {
+            this.ClientListService.getClient(thisClientId).emit('getMessage', {
                 id: client.id,
-                nickname: thisClient.data.nickname,
+                nickname: client.data.nickname,
                 message,
             });
         }
@@ -75,5 +74,26 @@ export class ChatBackEndGateway
     @SubscribeMessage('setNickname')
     setNickname(client: Socket, nickname: string): void {
         client.data.nickname = nickname;
+    }
+
+    //채팅방 목록 가져오기
+    @SubscribeMessage('getChatRoomList')
+    getChatRoomList(
+        client: Socket,
+        payload: any,
+    ): Record<string, chatRoomListDTO> {
+        return this.ChatRoomService.getChatRoomList();
+    }
+
+    //채팅방 목록 가져오기
+    @SubscribeMessage('createChatRoom')
+    createChatRoom(client: Socket, room_name: string): chatRoomListDTO {
+        return this.ChatRoomService.createChatRoom(client, room_name);
+    }
+
+    //채팅방 들어가기
+    @SubscribeMessage('enterChatRoom')
+    enterChatRoom(client: Socket, room_id: string) {
+        this.ChatRoomService.enterChatRoom(client, room_id);
     }
 }

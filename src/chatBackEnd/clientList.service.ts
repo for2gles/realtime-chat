@@ -3,7 +3,7 @@ import { Socket } from 'socket.io';
 
 @Injectable()
 export class ClientListService {
-    clientList: Record<string, Socket>;
+    private clientList: Record<string, Socket>;
     constructor() {
         this.clientList = {};
     }
@@ -16,7 +16,11 @@ export class ClientListService {
         delete this.clientList[id];
     }
 
-    getClient(): Record<string, Socket> {
+    getClient(id: string): Socket {
+        return this.clientList[id];
+    }
+
+    getClientList(): Record<string, Socket> {
         return this.clientList;
     }
 }
