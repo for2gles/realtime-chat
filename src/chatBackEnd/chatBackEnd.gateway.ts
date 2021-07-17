@@ -6,10 +6,10 @@ import {
     OnGatewayConnection,
     OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { from, map, Observable } from 'rxjs';
-// import { Server } from 'ws';
 import { Server, Socket } from 'socket.io';
-import { Injectable } from '@nestjs/common';
+import { ClientListService } from './clientList.service';
+import { ChatRoomService } from './chatRoom.service';
+import { setInitDTO } from './dto/chatBackEnd.dto';
 
 @WebSocketGateway(5000, {
     cors: {
@@ -19,29 +19,31 @@ import { Injectable } from '@nestjs/common';
 export class ChatBackEndGateway
     implements OnGatewayConnection, OnGatewayDisconnect
 {
-    clientList: Record<string, Socket>;
-    constructor() {
-        this.clientList = {};
-    }
+    constructor(
+        private readonly ClientListService: ClientListService,
+        private readonly ChatRoomService: ChatRoomService,
+    ) {}
     @WebSocketServer()
     server: Server;
 
-    //소켓 연결시 오브젝트에 저장
+    //소켓 연결시 유저목록에 추가
     public handleConnection(client: Socket): void {
         console.log('connected', client.id);
-        this.clientList[client.id] = client;
+        this.ClientListService.addClient(client.id, client);
     }
 
-    //소켓 연결 해제시 오브젝트에서 제거
+    //소켓 연결 해제시 유저목록에서 제거
     public handleDisconnect(client: Socket): void {
         console.log('disonnected', client.id);
-        delete this.clientList[client.id];
+        this.ClientListService.deleteClient(client.id);
     }
 
     //메시지가 전송되면 모든 유저에게 메시지 전송
     @SubscribeMessage('sendMessage')
     sendMessage(client: Socket, message: string): void {
-        for (const [id, thisClient] of Object.entries(this.clientList)) {
+        for (const [id, thisClient] of Object.entries(
+            this.ClientListService.getClient(),
+        )) {
             thisClient.emit('getMessage', {
                 id: client.id,
                 nickname: thisClient.data.nickname,
@@ -52,12 +54,12 @@ export class ChatBackEndGateway
 
     //처음 접속시 닉네임 등 최초 설정
     @SubscribeMessage('setInit')
-    setInit(client: Socket, payload: any) {
+    setInit(client: Socket, data: setInitDTO): setInitDTO {
         if (client.data.isInit) {
             return;
         }
-        client.data.nickname = payload.nickname
-            ? payload.nickname
+        client.data.nickname = data.nickname
+            ? data.nickname
             : '낯선사람' + client.id;
         client.data.isInit = true;
         return {
@@ -67,7 +69,7 @@ export class ChatBackEndGateway
 
     //닉네임 변경
     @SubscribeMessage('setNickname')
-    setNickname(client: Socket, payload: string): void {
-        client.data.nickname = payload;
+    setNickname(client: Socket, nickname: string): void {
+        client.data.nickname = nickname;
     }
 }
