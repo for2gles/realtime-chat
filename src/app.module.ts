@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { EventsModule } from './events/events.module';
-import { ChatModule } from './chat/chat.module';
+import { ChatBackEndModule } from './chatBackEnd/chatBackEnd.module';
+import { ChatFrontEndModule } from './chatFrontEnd/chatFrontEnd.module';
 
 @Module({
-    imports: [EventsModule, ChatModule],
+    imports: [ChatBackEndModule, ChatFrontEndModule],
 })
 export class AppModule {}

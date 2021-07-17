@@ -11,7 +11,9 @@ import { Server } from 'ws';
 import { Injectable } from '@nestjs/common';
 
 @WebSocketGateway(5000)
-export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class ChatBackEndGateway
+    implements OnGatewayConnection, OnGatewayDisconnect
+{
     client: Record<string, any>;
     constructor() {
         this.client = {};

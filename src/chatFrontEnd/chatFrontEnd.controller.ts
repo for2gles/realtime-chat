@@ -1,7 +1,7 @@
 import { Controller, Get, Render } from '@nestjs/common';
 
-@Controller('chat')
-export class ChatController {
+@Controller()
+export class ChatFrontEndController {
     @Get()
     @Render('index')
     root() {
