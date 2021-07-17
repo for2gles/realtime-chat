@@ -22,14 +22,12 @@ export class ChatBackEndGateway
     server: Server;
 
     public handleConnection(client): void {
-        console.log('hi');
         client['id'] = String(Number(new Date()));
         client['nickname'] = '낯선남자' + String(Number(new Date()));
         this.client[client['id']] = client;
     }
 
     public handleDisconnect(client): void {
-        console.log('bye', client['id']);
         delete this.client[client['id']];
     }
 
