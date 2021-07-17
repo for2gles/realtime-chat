@@ -1,21 +1,35 @@
 <html>
     <head>
+    <script src="https://cdn.socket.io/3.1.3/socket.io.min.js" integrity="sha384-cPwlPLvBTa3sKAgddT6krw0cJat7egBga3DJepJyrLl4Q9/5WLra3rrnMcyTyOnh" crossorigin="anonymous"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script>
-            const socket = new WebSocket('ws://localhost:5000');
-            socket.onopen = function() {
+            let myInfo = {
+                nickname: null,
+            }
+            const socket = io('http://localhost:5000');
+            socket.on('connect', function() {
                 console.log('Connected');
-                socket.send(
-                    JSON.stringify({
-                        event: 'events',
-                        data: 'test',
-                    }),
+                //연결 완료 후 로컬스토리지를 확인하여 닉네임 세팅
+                const nickname = localStorage.getItem('nickname');
+                socket.emit('setInit', { nickname }, response =>
+                    {
+                        myInfo.nickname = response.nickname;
+                        $('.nickname').val(myInfo.nickname);
+                    }
                 );
-                socket.onmessage = function(message) {
-                    const {event, data} = JSON.parse(message.data);
-                    $('.chat').append('<li>'+data.nickname+' : '+data.message+'</li>');
-                };
-            };
+            });
+            socket.on('events', function(data) {
+                console.log(data);
+            });
+            socket.on('getMessage', function({nickname, message}) {
+                $('.chat').append('<li>'+nickname+' : '+message+'</li>');
+            });
+            socket.on('exception', function(data) {
+                console.log('event', data);
+            });
+            socket.on('disconnect', function() {
+                console.log('Disconnected');
+            });
         </script>
     </head>
 
@@ -23,14 +37,10 @@
         <ul class="chat">
         </ul>
         <input type="text" class="text"/>
-        <button class="btn">hi</button>
+        <button class="btn">sned</button>
         <script>
             $('.btn').on('click', function(){
-                socket.send(
-                    JSON.stringify({
-                        event: 'message',
-                        data: $('.text').val(),
-                    }),);
+                socket.emit('sendMessage', $('.text').val());
                 $('.text').val('');
             })
         </script>
@@ -39,12 +49,8 @@
         <button class="setNickname">setNickname</button>
         <script>
             $('.setNickname').on('click', function(){
-                socket.send(
-                    JSON.stringify({
-                        event: 'nickname',
-                        data: $('.nickname').val(),
-                    }),);
-                $('.nickname').val('');
+                socket.emit('setNickname', $('.nickname').val());
+                localStorage.setItem('nickname', $('.nickname').val());
             })
         </script>
     </body>

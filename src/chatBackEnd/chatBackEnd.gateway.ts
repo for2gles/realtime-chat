@@ -7,49 +7,67 @@ import {
     OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { from, map, Observable } from 'rxjs';
-import { Server } from 'ws';
+// import { Server } from 'ws';
+import { Server, Socket } from 'socket.io';
 import { Injectable } from '@nestjs/common';
 
-@WebSocketGateway(5000)
+@WebSocketGateway(5000, {
+    cors: {
+        origin: 'http://localhost:3000',
+    },
+})
 export class ChatBackEndGateway
     implements OnGatewayConnection, OnGatewayDisconnect
 {
-    client: Record<string, any>;
+    client: Record<string, Socket>;
     constructor() {
         this.client = {};
     }
     @WebSocketServer()
     server: Server;
 
-    public handleConnection(client): void {
-        client['id'] = String(Number(new Date()));
-        client['nickname'] = '낯선남자' + String(Number(new Date()));
-        this.client[client['id']] = client;
+    //소켓 연결시 오브젝트에 저장
+    public handleConnection(client: Socket): void {
+        console.log('connected', client.id);
+        this.client[client.id] = client;
     }
 
-    public handleDisconnect(client): void {
-        delete this.client[client['id']];
+    //소켓 연결 해제시 오브젝트에서 제거
+    public handleDisconnect(client: Socket): void {
+        console.log('disonnected', client.id);
+        delete this.client[client.id];
     }
 
-    @SubscribeMessage('message')
-    handleMessage(client: any, payload: any): void {
-        for (const [key, value] of Object.entries(this.client)) {
-            value.send(
-                JSON.stringify({
-                    event: 'events',
-                    data: { nickname: client['nickname'], message: payload },
-                }),
-            );
+    //메시지가 전송되면 모든 유저에게 메시지 전송
+    @SubscribeMessage('sendMessage')
+    sendMessage(client: Socket, message: string): void {
+        for (const [id, thisClient] of Object.entries(this.client)) {
+            thisClient.emit('getMessage', {
+                id: client.id,
+                nickname: thisClient.data.nickname,
+                message,
+            });
         }
     }
 
-    @SubscribeMessage('nickname')
-    setNickname(client: any, payload: any): void {
-        this.client[client['id']]['nickname'] = payload;
+    //처음 접속시 닉네임 등 최초 설정
+    @SubscribeMessage('setInit')
+    setInit(client: Socket, payload: any) {
+        if (client.data.isInit) {
+            return;
+        }
+        client.data.nickname = payload.nickname
+            ? payload.nickname
+            : '낯선사람' + client.id;
+        client.data.isInit = true;
+        return {
+            nickname: client.data.nickname,
+        };
     }
-    // handleMessage(client: any, payload: any): Observable<WsResponse<string>> {
-    //     return from(['1', '2', '3']).pipe(
-    //         map((item) => ({ event: 'events', data: item })),
-    //     );
-    // }
+
+    //닉네임 변경
+    @SubscribeMessage('setNickname')
+    setNickname(client: Socket, payload: string): void {
+        client.data.nickname = payload;
+    }
 }
