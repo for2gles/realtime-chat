@@ -55,13 +55,17 @@ export class ChatBackEndGateway
     //처음 접속시 닉네임 등 최초 설정
     @SubscribeMessage('setInit')
     setInit(client: Socket, data: setInitDTO): setInitDTO {
+        // 이미 최초 세팅이 되어있는 경우 패스
         if (client.data.isInit) {
             return;
         }
+
         client.data.nickname = data.nickname
             ? data.nickname
             : '낯선사람' + client.id;
+
         client.data.isInit = true;
+
         return {
             nickname: client.data.nickname,
         };
