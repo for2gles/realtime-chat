@@ -10,15 +10,15 @@ export class ChatRoomService {
     constructor(private readonly ClientListService: ClientListService) {
         this.chatRoomList = {};
     }
-    createChatRoom(client: Socket, room_name: string): chatRoomListDTO {
-        const room_id = uuidv4();
-        this.chatRoomList[room_id] = {
-            room_id,
-            cheif_id: client.id,
-            room_name,
-            in_room: [client.id],
-        };
-        client.data.room_id = room_id;
+    createChatRoom(client: Socket, room_name: string): void {
+        const room_id = `room:${uuidv4()}`;
+        // this.chatRoomList[room_id] = {
+        //     room_id,
+        //     cheif_id: client.id,
+        //     room_name,
+        //     in_room: [client.id],
+        // };
+        // client.data.room_id = room_id;
         const nickname: string = client.data.nickname;
         client.emit('getMessage', {
             id: null,
@@ -30,34 +30,52 @@ export class ChatRoomService {
                 room_name +
                 '"방을 생성하였습니다.',
         });
-        return this.chatRoomList[room_id];
+        // return this.chatRoomList[room_id];
+        client.rooms.clear();
+        client.join(room_id);
     }
 
     enterChatRoom(client: Socket, room_id: string) {
-        client.data.room_id = room_id;
-        this.chatRoomList[room_id].in_room.push(client.id);
+        client.rooms.clear();
+        client.join(room_id);
         const { nickname } = client.data;
-        for (const thisClientId of this.chatRoomList[room_id].in_room) {
-            this.ClientListService.getClient(thisClientId).emit('getMessage', {
-                id: null,
-                nickname: '안내',
-                message: '"' + nickname + '"님이 방에 접속하셨습니다.',
-            });
-        }
+        client.to(room_id).emit('getMessage', {
+            id: null,
+            nickname: '안내',
+            message: '"' + nickname + '"님이 방에 접속하셨습니다.',
+        });
+        // client.data.room_id = room_id;
+        // this.chatRoomList[room_id].in_room.push(client.id);
+        // const { nickname } = client.data;
+        // for (const thisClientId of this.chatRoomList[room_id].in_room) {
+        //     this.ClientListService.getClient(thisClientId).emit('getMessage', {
+        //         id: null,
+        //         nickname: '안내',
+        //         message: '"' + nickname + '"님이 방에 접속하셨습니다.',
+        //     });
+        // }
     }
 
     exitChatRoom(client: Socket, room_id: string) {
-        delete client.data.room_id;
-        const index = this.chatRoomList[room_id].in_room.indexOf(client.id);
-        this.chatRoomList[room_id].in_room.splice(index, 1);
+        client.rooms.clear();
+        client.join(`room:lobby`);
         const { nickname } = client.data;
-        for (const thisClientId of this.chatRoomList[room_id].in_room) {
-            this.ClientListService.getClient(thisClientId).emit('getMessage', {
-                id: null,
-                nickname: '안내',
-                message: '"' + nickname + '"님이 방에서 나갔습니다.',
-            });
-        }
+        client.to(room_id).emit('getMessage', {
+            id: null,
+            nickname: '안내',
+            message: '"' + nickname + '"님이 방에서 나갔습니다.',
+        });
+        // delete client.data.room_id;
+        // const index = this.chatRoomList[room_id].in_room.indexOf(client.id);
+        // this.chatRoomList[room_id].in_room.splice(index, 1);
+        // const { nickname } = client.data;
+        // for (const thisClientId of this.chatRoomList[room_id].in_room) {
+        //     this.ClientListService.getClient(thisClientId).emit('getMessage', {
+        //         id: null,
+        //         nickname: '안내',
+        //         message: '"' + nickname + '"님이 방에서 나갔습니다.',
+        //     });
+        // }
     }
 
     getChatRoom(room_id: string): chatRoomListDTO {

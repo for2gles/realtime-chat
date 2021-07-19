@@ -41,16 +41,26 @@
                 );
                 socket.emit('getChatRoomList', null, response =>
                     {
-                        for(const thisChatRoom of Object.values(response)){
-                            const {room_id, room_name} = thisChatRoom
-                            let html = '';
-                            html += '<ul>';
-                            html += '<span class="enterChatRoom" data-room_id="'+room_id+'">';
-                            html += room_name;
-                            html += '</span>';
-                            html += '</ul>';
-                            $('.chatRoomList').append(html);
-                        }
+                        console.log(response)
+
+                        const {room_id, room_name} = response
+                        let html = '';
+                        html += '<ul>';
+                        html += '<span class="enterChatRoom" data-room_id="'+room_id+'">';
+                        html += room_name;
+                        html += '</span>';
+                        html += '</ul>';
+                        $('.chatRoomList').append(html);
+                        // for(const thisChatRoom of Object.values(response)){
+                        //     const {room_id, room_name} = thisChatRoom
+                        //     let html = '';
+                        //     html += '<ul>';
+                        //     html += '<span class="enterChatRoom" data-room_id="'+room_id+'">';
+                        //     html += room_name;
+                        //     html += '</span>';
+                        //     html += '</ul>';
+                        //     $('.chatRoomList').append(html);
+                        // }
                     }
                 );
             });
@@ -64,6 +74,7 @@
                 console.log('event', data);
             });
             socket.on('disconnect', function() {
+                $('.chatRoomList').html('');
                 console.log('Disconnected');
             });
 
