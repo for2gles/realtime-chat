@@ -103,6 +103,14 @@ export class ChatBackEndGateway
     //채팅방 생성하기
     @SubscribeMessage('createChatRoom')
     createChatRoom(client: Socket, roomName: string) {
+        //이전 방이 만약 나 혼자있던 방이면 제거
+        if (
+            client.data.roomId != 'room:lobby' &&
+            this.server.sockets.adapter.rooms.get(client.data.roomId).size == 1
+        ) {
+            this.ChatRoomService.deleteChatRoom(client.data.roomId);
+        }
+
         this.ChatRoomService.createChatRoom(client, roomName);
         return {
             roomId: client.data.roomId,
@@ -117,6 +125,13 @@ export class ChatBackEndGateway
         //이미 접속해있는 방 일 경우 재접속 차단
         if (client.rooms.has(roomId)) {
             return;
+        }
+        //이전 방이 만약 나 혼자있던 방이면 제거
+        if (
+            client.data.roomId != 'room:lobby' &&
+            this.server.sockets.adapter.rooms.get(client.data.roomId).size == 1
+        ) {
+            this.ChatRoomService.deleteChatRoom(client.data.roomId);
         }
         this.ChatRoomService.enterChatRoom(client, roomId);
         return {
