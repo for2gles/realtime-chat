@@ -12,7 +12,7 @@
             <button class="createChatRoom">채팅방 만들기</button>
         </div>
         <div>
-            <h3>채팅내용</h3><br/>
+            <h3>"<span class="roomName"></span>" 채팅내용</h3><br/>
             <ul class="chat">
             </ul>
         </div>
@@ -24,85 +24,87 @@
         <script>
         </script>
     </body>
-        <script>
-            let myInfo = {
-                nickname: null,
+    <script>
+        let myInfo = {
+            nickname: null,
+            room: {
+                roomId: null,
+                roomName: null
             }
-            const socket = io('http://localhost:5000');
-            socket.on('connect', function() {
-                console.log('Connected');
-                //연결 완료 후 로컬스토리지를 확인하여 닉네임 세팅
-                const nickname = localStorage.getItem('nickname');
-                socket.emit('setInit', { nickname }, response =>
-                    {
-                        myInfo.nickname = response.nickname;
-                        $('.nickname').val(myInfo.nickname);
-                    }
-                );
-                socket.emit('getChatRoomList', null, response =>
-                    {
-                        console.log(response)
-
-                        const {room_id, room_name} = response
-                        let html = '';
-                        html += '<ul>';
-                        html += '<span class="enterChatRoom" data-room_id="'+room_id+'">';
-                        html += room_name;
-                        html += '</span>';
-                        html += '</ul>';
-                        $('.chatRoomList').append(html);
-                        // for(const thisChatRoom of Object.values(response)){
-                        //     const {room_id, room_name} = thisChatRoom
-                        //     let html = '';
-                        //     html += '<ul>';
-                        //     html += '<span class="enterChatRoom" data-room_id="'+room_id+'">';
-                        //     html += room_name;
-                        //     html += '</span>';
-                        //     html += '</ul>';
-                        //     $('.chatRoomList').append(html);
-                        // }
-                    }
-                );
-            });
-            socket.on('events', function(data) {
-                console.log(data);
-            });
-            socket.on('getMessage', function({nickname, message}) {
-                $('.chat').append('<li>'+nickname+' : '+message+'</li>');
-            });
-            socket.on('exception', function(data) {
-                console.log('event', data);
-            });
-            socket.on('disconnect', function() {
-                $('.chatRoomList').html('');
-                console.log('Disconnected');
-            });
-
-            //채팅방 생성
-            $('.createChatRoom').on('click', function(){
-                const room_name = prompt('채팅방 이름을 입력해주세요.');
-                if(!room_name){
-                    return false;
+        }
+        const socket = io('http://localhost:5000');
+        socket.on('connect', function() {
+            console.log('Connected');
+            //연결 완료 후 로컬스토리지를 확인하여 닉네임 세팅
+            const nickname = localStorage.getItem('nickname');
+            socket.emit('setInit', { nickname }, response =>
+                {
+                    myInfo.nickname = response.nickname;
+                    myInfo.room = response.room;
+                    $('.nickname').val(myInfo.nickname);
+                    $('.roomName').text(myInfo.room.roomName);
                 }
-                socket.emit('createChatRoom', room_name);
-            })
+            );
+            socket.emit('getChatRoomList', null);
+        });
+        socket.on('getMessage', function({nickname, message}) {
+            $('.chat').append('<li>'+nickname+' : '+message+'</li>');
+        });
+        socket.on('getChatRoomList', function(response) {
+            let html = '';
+            html += '<ul>';
+            for(const {roomId, roomName} of Object.values(response)){
+                html += '<li>';
+                html += '<span class="enterChatRoom" data-roomId="'+roomId+'">';
+                html += roomName;
+                html += '</span>';
+                html += '</li>';
+            }
+            html += '</ul>';
+            $('.chatRoomList').html(html);
+        });
+        socket.on('disconnect', function() {
+            $('.chatRoomList').html('');
+            console.log('Disconnected');
+        });
 
-            //채팅방 입장
-            $(document).on('click', '.enterChatRoom', function(){
-                const thisRoomId = $(this).data('room_id');
-                socket.emit('enterChatRoom', thisRoomId);
-            })
+        //채팅방 생성
+        $('.createChatRoom').on('click', function(){
+            const roomName = prompt('채팅방 이름을 입력해주세요.');
+            if(!roomName){
+                return false;
+            }
+            $('.chat').html('');
+            socket.emit('createChatRoom', roomName,  (res) => {
+                if(!res) return;
+                myInfo.room = res;
+                $('.roomName').text(myInfo.room.roomName);
+                $('.chat').html('');
+            });
+            socket.emit('getChatRoomList', null);
+        })
 
-            //메시지 전송
-            $('.sendMessage').on('click', function(){
-                socket.emit('sendMessage', $('.text').val());
-                $('.text').val('');
-            })
+        //채팅방 입장
+        $(document).on('click', '.enterChatRoom', function(){
+            const thisRoomId = $(this).attr('data-roomId');
+            socket.emit('enterChatRoom', thisRoomId, (res) => {
+                if(!res) return;
+                myInfo.room = res;
+                $('.roomName').text(myInfo.room.roomName);
+                $('.chat').html('');
+            });
+        })
 
-            //닉네임 설정
-            $('.setNickname').on('click', function(){
-                socket.emit('setNickname', $('.nickname').val());
-                localStorage.setItem('nickname', $('.nickname').val());
-            })
-        </script>
+        //메시지 전송
+        $('.sendMessage').on('click', function(){
+            socket.emit('sendMessage', $('.text').val());
+            $('.text').val('');
+        })
+
+        //닉네임 설정
+        $('.setNickname').on('click', function(){
+            socket.emit('setNickname', $('.nickname').val());
+            localStorage.setItem('nickname', $('.nickname').val());
+        })
+    </script>
 </html>

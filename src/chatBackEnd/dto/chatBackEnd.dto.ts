@@ -1,11 +1,14 @@
 import { Socket } from 'socket.io';
 export class setInitDTO {
     nickname: string;
+    room: {
+        roomId: string;
+        roomName: string;
+    };
 }
 
 export class chatRoomListDTO {
-    room_id: string;
-    cheif_id: string;
-    room_name: string;
-    in_room: string[];
+    roomId: string;
+    cheifId: string;
+    roomName: string;
 }
